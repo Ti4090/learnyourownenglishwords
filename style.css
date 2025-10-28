@@ -403,6 +403,64 @@ label[for="f-notes"] {
     cursor: pointer;
 }
 
+/* ==================== Responsive / Mobile tweaks ==================== */
+@media (max-width: 900px) {
+    :root { --v-sidebar-width: 220px; }
+
+    /* Sidebar becomes overlayed and hidden by default for small screens */
+    #sidebar {
+        position: fixed;
+        left: 0;
+        top: 64px;
+        height: calc(100vh - 64px);
+        transform: translateX(-110%);
+        transition: transform 0.2s ease;
+        z-index: 1200;
+        box-shadow: var(--v-shadow-lg);
+    }
+
+    #sidebar.open {
+        transform: translateX(0);
+    }
+
+    /* Make header more compact */
+    #appHeader { padding: 0 0.75rem; }
+    .header-content { gap: .5rem; }
+
+    /* Main content padding reduced */
+    #mainContent { padding: 1rem; }
+
+    /* Modal should be nearly full-screen on small devices */
+    .modal .modal-content {
+        width: calc(100% - 2rem);
+        max-width: none;
+        margin: 1rem;
+        height: auto;
+        max-height: calc(100vh - 4rem);
+        overflow-y: auto;
+        border-radius: 8px;
+    }
+
+    /* Ensure select dropdowns expand full width and appear above other content */
+    .select-dropdown {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        top: auto;
+        z-index: 1400;
+        max-height: 50vh;
+    }
+
+    /* Make category list and other scrollables comfortable on mobile */
+    .category-list { max-height: 40vh; }
+}
+
+@media (max-width: 480px) {
+    #appHeader { height: 56px; }
+    .app-title { font-size: 1.1rem; }
+    .btn-icon { width: 36px; height: 36px; }
+}
+
 .word-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--v-shadow-lg);

@@ -953,19 +953,8 @@ function renderAddWord(container) {
     });
 
     // --- AI Assistant helper for page add word ---
-    const pageAIInput = document.createElement('div');
-    pageAIInput.className = 'form-group';
-    pageAIInput.innerHTML = `
-        <label for="page-ai-input">Hangi kelimeyi eklemek istiyorsunuz? (AI yardım için yazıp Enter'a basın)</label>
-        <div style="display:flex; gap:.5rem; align-items:center;">
-            <input type="text" id="page-ai-input" placeholder="Örnek: serendipity" style="flex:1; padding:8px;">
-            <button type="button" class="btn-secondary" id="btn-open-chatgpt-page">ChatGPT ile Doldur</button>
-        </div>
-    <small style="display:block; color:var(--v-text-secondary); margin-top:.4rem;">Butona basınca hazır bir prompt panoya kopyalanır ve ekranda gösterilir. Kopyalayın, ChatGPT'ye yapıştırıp gönderin; gelen JSON'u aşağıya yapıştırarak formu doldurabilirsiniz.</small>
-    `;
-    // Insert AI helper at top of form
+    // The helper UI is provided in the collapsible `page-ai-helper` below.
     const pageForm = document.getElementById('page-add-word-form');
-    if (pageForm) pageForm.prepend(pageAIInput);
 
     // Wire AI helper events for page
     // Build a collapsible page helper container and prepend it
@@ -2662,33 +2651,42 @@ function initializeCategoryDropdown(prefix) {
     list.innerHTML = '';
     
     // Add categories to the list
-    categories.forEach(category => {
-        list.innerHTML += `
-            <div class="category-option" data-value="${escapeHtml(category)}">
-                <i class="fas fa-check"></i>
-                <span>${escapeHtml(category)}</span>
+    if (categories.length === 0) {
+        list.innerHTML = `
+            <div class="category-empty" style="padding:12px; color:var(--v-text-secondary);">
+                No categories yet. <a href="#categories" class="btn-link">Create one</a>
             </div>
         `;
-    });
+    } else {
+        categories.forEach(category => {
+            const safe = escapeHtml(category);
+            list.insertAdjacentHTML('beforeend', `
+                <div class="category-option" data-value="${safe}">
+                    <i class="fas fa-check"></i>
+                    <span>${safe}</span>
+                </div>
+            `);
+        });
 
-    // Add click handlers
-    list.querySelectorAll('.category-option').forEach(option => {
-        option.addEventListener('click', () => {
-            const value = option.getAttribute('data-value');
+        // Add click handlers (delegated to list for robustness)
+        list.addEventListener('click', (ev) => {
+            const opt = ev.target.closest('.category-option');
+            if (!opt) return;
+            const value = opt.getAttribute('data-value');
             toggleCategory(prefix, value);
         });
-    });
 
-    // Add search handler
-    const searchInput = container.querySelector('input[type="text"]');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            list.querySelectorAll('.category-option').forEach(option => {
-                const text = option.querySelector('span').textContent.toLowerCase();
-                option.style.display = text.includes(query) ? '' : 'none';
+        // Add search handler (use data-testid or text input inside container)
+        const searchInput = container.querySelector('input[data-testid$="-category-search"]') || container.querySelector('input[type="text"]');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                list.querySelectorAll('.category-option').forEach(option => {
+                    const text = option.querySelector('span').textContent.toLowerCase();
+                    option.style.display = text.includes(query) ? '' : 'none';
+                });
             });
-        });
+        }
     }
 
     // Initialize header click handler
