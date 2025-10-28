@@ -1,0 +1,105 @@
+.category-select-container {
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+
+.category-select-container select.category-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--v-border-color);
+    border-radius: var(--v-radius-md);
+    background: var(--v-bg-primary);
+    min-height: 120px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.category-select-container select.category-select:focus {
+    border-color: var(--v-primary);
+    box-shadow: 0 0 0 2px var(--v-primary-light);
+    outline: none;
+}
+
+.category-select-container select.category-select option {
+    padding: 10px;
+    margin: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.category-select-container select.category-select option:checked {
+    background: var(--v-primary) linear-gradient(0deg, var(--v-primary) 0%, var(--v-primary) 100%);
+    color: white;
+    font-weight: 500;
+}
+
+.category-select-container select.category-select option:hover {
+    background-color: var(--v-bg-hover);
+}
+
+.category-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.5rem 0;
+}
+
+.btn-link-primary {
+    color: var(--v-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: var(--v-radius-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-link-primary:hover {
+    background: var(--v-primary-light);
+    color: var(--v-primary-dark);
+}
+
+.category-hint {
+    color: var(--v-text-tertiary);
+    font-size: 0.875rem;
+    margin: 0.5rem 0;
+    padding: 0.75rem;
+    background: var(--v-bg-secondary);
+    border-radius: var(--v-radius-md);
+    text-align: center;
+}
+
+.category-hint a {
+    color: var(--v-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.category-hint a:hover {
+    text-decoration: underline;
+}
+
+.form-group.category-group {
+    flex: 1;
+}
+
+/* Dark theme adjustments */
+.dark .category-select-container select.category-select {
+    background: var(--v-bg-secondary);
+    border-color: var(--v-border-color);
+}
+
+.dark .category-select-container select.category-select option {
+    background: var(--v-bg-secondary);
+}
+
+.dark .category-select-container select.category-select option:checked {
+    background: var(--v-primary);
+    color: white;
+}
+
+.dark .btn-link-primary:hover {
+    background: rgba(var(--v-primary-rgb), 0.2);
+}

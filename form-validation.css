@@ -1,0 +1,23 @@
+.form-group input.invalid,
+.form-group select.invalid {
+    border-color: var(--v-danger);
+    background-color: var(--v-danger-bg);
+}
+
+.form-group input.invalid:focus,
+.form-group select.invalid:focus {
+    border-color: var(--v-danger);
+    box-shadow: 0 0 0 2px var(--v-danger-bg);
+}
+
+.form-group input:required:invalid,
+.form-group select:required:invalid {
+    border-color: inherit;
+    background-color: inherit;
+}
+
+.form-group input:required:invalid:focus,
+.form-group select:required:invalid:focus {
+    border-color: var(--v-primary);
+    box-shadow: 0 0 0 2px var(--v-primary-light);
+}

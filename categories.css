@@ -1,0 +1,38 @@
+.category-select-container {
+    position: relative;
+}
+
+.category-select-container select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--v-border-color);
+    border-radius: var(--v-radius-sm);
+    background: var(--v-bg-primary);
+    min-height: 120px;
+}
+
+.category-select-container select option {
+    padding: 8px;
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+.category-select-container select option:checked {
+    background: var(--v-primary);
+    color: white;
+}
+
+.category-hint {
+    color: var(--v-text-tertiary);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.category-hint a {
+    color: var(--v-primary);
+    text-decoration: none;
+}
+
+.category-hint a:hover {
+    text-decoration: underline;
+}

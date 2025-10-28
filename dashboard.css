@@ -1,0 +1,30 @@
+/* Simple Word Card for Dashboard */
+.simple-word-card {
+    background: var(--v-bg-primary);
+    border: 1px solid var(--v-border-color);
+    border-radius: var(--v-radius-md);
+    padding: 1rem;
+    cursor: pointer;
+    transition: var(--v-transition);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: var(--v-shadow-sm);
+}
+
+.simple-word-card:hover {
+    border-color: var(--v-primary);
+    box-shadow: var(--v-shadow-md);
+    transform: translateY(-2px);
+}
+
+.simple-word-english {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--v-text-primary);
+}
+
+.simple-word-turkish {
+    font-size: 1rem;
+    color: var(--v-text-secondary);
+}

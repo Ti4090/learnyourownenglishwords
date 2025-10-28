@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocabMaster - English Vocabulary Learning</title>
+    <meta name="description" content="Learn English vocabulary with custom word management, smart quizzes, spaced repetition, and progress tracking.">
+    
+    <!-- CDN Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="select.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="appHeader" role="banner">
+        <div class="header-content">
+            <div class="header-left">
+                <button id="btn-menu-toggle" class="btn-icon" aria-label="Toggle menu" data-testid="button-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="app-title">
+                    <i class="fas fa-book-reader"></i>
+                    VocabMaster
+                </h1>
+            </div>
+            
+            <div class="header-stats">
+                <div class="stat-pill" data-testid="stat-total-words">
+                    <i class="fas fa-list"></i>
+                    <span id="stat-total">0</span>
+                </div>
+                <div class="stat-pill stat-learned" data-testid="stat-learned-words">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="stat-learned">0</span>
+                </div>
+                <div class="stat-pill stat-favorites" data-testid="stat-favorites">
+                    <i class="fas fa-star"></i>
+                    <span id="stat-fav">0</span>
+                </div>
+                <div class="stat-pill stat-hard" data-testid="stat-hard-words">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="stat-hard">0</span>
+                </div>
+                <div class="stat-pill stat-streak" data-testid="stat-streak">
+                    <i class="fas fa-fire"></i>
+                    <span id="stat-streak">0</span>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <button id="btn-theme-toggle" class="btn-icon" aria-label="Toggle theme" data-testid="button-theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="btn-settings" class="btn-icon" aria-label="Settings" data-testid="button-settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" role="navigation">
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-route="dashboard" data-testid="nav-dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#add-word" class="nav-item" data-route="add-word" data-testid="nav-add-word">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Word</span>
+                </a>
+                <a href="#learn" class="nav-item" data-route="learn" data-testid="nav-learn">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Learn Words</span>
+                </a>
+                <a href="#dictionary" class="nav-item" data-route="dictionary" data-testid="nav-dictionary">
+                    <i class="fas fa-book"></i>
+                    <span>Dictionary</span>
+                </a>
+                <a href="#favorites" class="nav-item" data-route="favorites" data-testid="nav-favorites">
+                    <i class="fas fa-star"></i>
+                    <span>Favorites</span>
+                </a>
+                <a href="#hard" class="nav-item" data-route="hard" data-testid="nav-hard">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Hard Words</span>
+                </a>
+                <a href="#categories" class="nav-item" data-route="categories" data-testid="nav-categories">
+                    <i class="fas fa-tags"></i>
+                    <span>Categories</span>
+                </a>
+                <a href="#notes" class="nav-item" data-route="notes" data-testid="nav-notes">
+                    <i class="fas fa-sticky-note"></i>
+                    <span>Notes</span>
+                </a>
+                <a href="#statistics" class="nav-item" data-route="statistics" data-testid="nav-statistics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Statistics</span>
+                </a>
+                <a href="#import-export" class="nav-item" data-route="import-export" data-testid="nav-import-export">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Import/Export</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="mainContent" role="main">
+            <!-- Content loaded dynamically by router -->
+        </main>
+    </div>
+
+    <footer id="appFooter" role="contentinfo">
+        <div class="footer-content">
+            <div class="footer-info">
+                <span>v1.0</span>
+                <span id="storage-usage" data-testid="text-storage-usage">Storage: 0 KB</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Add/Edit Word Modal -->
+    <div id="panel-addWord" class="modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="modal-title" data-testid="text-modal-title">Add New Word</h2>
+                <button class="btn-close" aria-label="Close modal" data-testid="button-close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="word-form" class="word-form" onsubmit="handleAddWordFormSubmit(event)">
+                <input type="hidden" id="word-id">
+                
+                <!-- AI Assistant: quick word enrichment (collapsible) -->
+                <div id="modal-ai-helper" class="ai-helper">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <div style="font-weight:600;">AI Yardımcısı</div>
+                        <button type="button" id="btn-toggle-ai-modal" class="btn-icon" title="Gizle/Aç" style="transform: rotate(0deg); transition: transform .15s;">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div style="margin-top:.35rem; display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
+                        <small style="color:var(--v-text-secondary);">AI'dan yardım almak istiyor musun?</small>
+                        <div style="margin-left:auto">
+                            <button type="button" id="btn-open-ai-modal-ok" class="btn-secondary" aria-pressed="false">Evet, yardım istiyorum</button>
+                        </div>
+                    </div>
+                    <div id="modal-ai-content" style="margin-top:.5rem; display: none;">
+                        <div class="form-group">
+                            <label for="f-ai-input">Hangi kelimeyi eklemek istiyorsunuz? (AI yardım için yazıp Enter'a basın)</label>
+                            <div style="display:flex; gap:.5rem; align-items:center;">
+                                <input type="text" id="f-ai-input" placeholder="Örnek: serendipity" style="flex:1; padding:8px;" aria-label="AI kelime girişi">
+                                <button type="button" class="btn-secondary" id="btn-open-chatgpt-modal">ChatGPT ile Doldur</button>
+                            </div>
+                            <small style="display:block; color:var(--v-text-secondary); margin-top:.4rem;">Butona basınca hazır bir prompt panoya kopyalanır ve ekranda gösterilir. Kopyalayın, ChatGPT'ye yapıştırıp gönderin; gelen JSON'u aşağıya yapıştırarak formu doldurabilirsiniz.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="f-ai-json">ChatGPT'den gelen JSON'u buraya yapıştırın ve "Uygula"ya basın</label>
+                            <textarea id="f-ai-json" style="width:100%; min-height:140px; font-family:monospace; padding:8px; margin-top:.4rem;" placeholder='{"english": "...", "turkish": "..."}'></textarea>
+                            <div style="display:flex; gap:.5rem; margin-top:.5rem;">
+                                <button type="button" class="btn-primary" id="btn-apply-ai-json">Yapıştır ve Uygula</button>
+                                <button type="button" class="btn-secondary" id="btn-clear-ai-json">Temizle</button>
+                                <div style="flex:1"></div>
+                                <small style="color:var(--v-text-secondary);">JSON formatı doğruysa form otomatik doldurulur.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="f-english">English Word *</label>
+                        <input type="text" id="f-english" required data-testid="input-english">
+                    </div>
+                    <div class="form-group">                      
+                            <label for="f-turkish">Turkish Translation *</label>
+                            <input type="text" id="f-turkish" placeholder="Türkçe çeviri" data-testid="input-turkish" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="f-pron">Pronunciation</label>
+                        <input type="text" id="f-pron" placeholder="/prəˌnʌnsiˈeɪʃən/" data-testid="input-pronunciation">
+                    </div>
+                    <div class="form-group">
+                        <label for="f-level">Level</label>
+                        <select id="f-level" data-testid="select-level">
+                            <option value="A1">A1 - Beginner</option>
+                            <option value="A2">A2 - Elementary</option>
+                            <option value="B1">B1 - Intermediate</option>
+                            <option value="B2">B2 - Upper Intermediate</option>
+                            <option value="C1" selected>C1 - Advanced</option>
+                            <option value="C2">C2 - Proficient</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="f-engExp">English Explanation</label>
+                    <textarea id="f-engExp" rows="2" placeholder="Detailed English definition..." data-testid="input-english-explanation"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="f-turkishExp">Turkish Explanation</label>
+                    <textarea id="f-turkishExp" rows="2" placeholder="Türkçe açıklama..." data-testid="input-turkish-explanation"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="f-syn">Synonyms (comma separated)</label>
+                        <input type="text" id="f-syn" placeholder="synonym1, synonym2" data-testid="input-synonyms">
+                    </div>
+                    <div class="form-group">
+                        <label for="f-ant">Antonyms (comma separated)</label>
+                        <input type="text" id="f-ant" placeholder="antonym1, antonym2" data-testid="input-antonyms">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="f-cats">Categories</label>
+                    <div class="custom-select-container" id="f-category-select">
+                        <div class="select-header" data-testid="input-categories">
+                            <div class="selected-categories"></div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="select-dropdown">
+                            <div class="search-box">
+                                <input type="text" placeholder="Search categories..." data-testid="f-category-search">
+                            </div>
+                            <div class="category-list">
+                                <!-- Categories will be populated here -->
+                            </div>
+                            <div class="dropdown-footer">
+                                <a href="#categories" class="btn-link">
+                                    <i class="fas fa-plus"></i> Manage Categories
+                                </a>
+                            </div>
+                        </div>
+                        <select id="f-cats" multiple style="display: none;" data-testid="input-categories"></select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="f-examples">Example Sentences (one per line, minimum 1)</label>
+                    <textarea id="f-examples" rows="4" placeholder="This is an example sentence.&#10;Here's another example." data-testid="input-examples"></textarea>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="f-fav" data-testid="checkbox-favorite">
+                        <span>Mark as Favorite</span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-word" data-testid="button-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary" id="btn-saveWord" data-testid="button-save-word">
+                        <i class="fas fa-save"></i> Save Word
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quiz Configuration Modal -->
+    <div id="quiz-config-modal" class="modal" role="dialog" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configure Quiz</h2>
+                <button class="btn-close" data-testid="button-close-quiz-config">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="quiz-config-form">
+                <div class="form-group">
+                    <label>Select Word Source</label>
+                    <select id="quiz-source" data-testid="select-quiz-source">
+                        <option value="all">All Words</option>
+                        <option value="due">Due for Review</option>
+                        <option value="favorites">Favorites</option>
+                        <option value="hard">Hard Words</option>
+                        <option value="category">By Category</option>
+                        <option value="custom">Custom Selection</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="category-selector" style="display: none;">
+                    <label>Select Category</label>
+                    <select id="quiz-category" data-testid="select-quiz-category"></select>
+                </div>
+
+                <div class="form-group" id="quiz-custom-group" style="display: none;">
+                    <label>Select Words</label>
+                    <div class="search-box" style="margin-bottom: 1rem;">
+                        <input type="text" id="word-search-input" placeholder="Search words..." style="width: 100%; padding: 8px;">
+                    </div>
+                    <div class="word-selection-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--v-border-color); border-radius: 4px;">
+                        <!-- Words will be populated here -->
+                    </div>
+                    <div style="margin-top: 0.5rem; color: var(--v-text-secondary);">
+                        <span id="selected-words-count">0</span> words selected
+                    </div>
+                </div>
+
+                <div class="form-group" id="quiz-word-count-group">
+                    <label>Number of Words (minimum 5)</label>
+                    <input type="number" id="quiz-word-count" min="5" value="5" data-testid="input-quiz-word-count">
+                </div>
+
+                <div class="form-group">
+                    <label>Question Types</label>
+                    <div class="checkbox-list">
+                        <label>
+                            <input type="checkbox" value="direct" checked data-testid="checkbox-quiz-type-direct">
+                            <span>Direct Translation (EN → TR)</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" value="reverse" checked data-testid="checkbox-quiz-type-reverse">
+                            <span>Reverse Translation (TR → EN)</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" value="writing" checked data-testid="checkbox-quiz-type-writing">
+                            <span>Writing (Fill in the blank)</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" value="listening" checked data-testid="checkbox-quiz-type-listening">
+                            <span>Listening (Audio → Text)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="quiz-randomize" checked data-testid="checkbox-randomize">
+                        <span>Randomize question order</span>
+                    </label>
+                </div>
+                <button class="btn-primary btn-block" id="btn-start-quiz" data-testid="button-start-quiz">
+                    <i class="fas fa-play"></i> Start Quiz
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal" role="dialog" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="btn-close" data-testid="button-close-settings">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="form-group">
+                    <label>Daily Test Reminder</label>
+                    <div class="form-row">
+                        <input type="time" id="notification-time" value="20:00" data-testid="input-notification-time">
+                        <label class="switch-label">
+                            <input type="checkbox" id="notification-enabled" data-testid="checkbox-notification-enabled">
+                            <span>Enabled</span>
+                        </label>
+                    </div>
+                </div>
+                <button class="btn-secondary" id="btn-test-notification" data-testid="button-test-notification">
+                    <i class="fas fa-bell"></i> Test Notification
+                </button>
+                <hr>
+                <div class="form-group">
+                    <label>Data Management</label>
+                    <button class="btn-secondary" id="btn-reset-learned" data-testid="button-reset-learned">
+                        <i class="fas fa-undo"></i> Reset Learned Flags
+                    </button>
+                    <button class="btn-secondary" id="btn-reset-stats" data-testid="button-reset-stats">
+                        <i class="fas fa-chart-line"></i> Reset All Statistics
+                    </button>
+                    <button class="btn-destructive" id="btn-clear-all" data-testid="button-clear-all">
+                        <i class="fas fa-trash"></i> Clear All Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal" role="dialog" aria-hidden="true">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="confirm-title">Confirm Action</h2>
+                <button class="btn-close" data-testid="button-close-confirm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="confirm-content">
+                <p id="confirm-message"></p>
+                <input type="text" id="confirm-input" placeholder="Type DELETE to confirm" style="display: none;" data-testid="input-confirm">
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="btn-confirm-cancel" data-testid="button-confirm-cancel">Cancel</button>
+                    <button class="btn-destructive" id="btn-confirm-ok" data-testid="button-confirm-ok">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Reminder Popup -->
+    <div id="daily-reminder" class="daily-reminder" style="display: none;" data-testid="popup-daily-reminder">
+        <div class="reminder-content">
+            <i class="fas fa-bell fa-2x"></i>
+            <h3>Time for Your Daily Test!</h3>
+            <p>Keep your streak going and improve your vocabulary.</p>
+            <div class="reminder-actions">
+                <button class="btn-secondary" id="btn-snooze" data-testid="button-snooze">
+                    <i class="fas fa-clock"></i> Snooze 1h
+                </button>
+                <button class="btn-primary" id="btn-take-now" data-testid="button-take-now">
+                    <i class="fas fa-play"></i> Take Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Drawer -->
+    <div id="notesDrawer" class="notes-drawer" data-testid="drawer-notes">
+        <div class="drawer-handle">
+            <div class="handle-bar"></div>
+        </div>
+        <div class="drawer-header">
+            <h3><i class="fas fa-sticky-note"></i> Notes</h3>
+            <div class="drawer-actions">
+                <button class="btn-icon" id="btn-add-note" data-testid="button-add-note" title="Add note">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="btn-icon" id="btn-notes-new-window" data-testid="button-notes-new-window" title="Open in new window">
+                    <i class="fas fa-external-link-alt"></i>
+                </button>
+                <button class="btn-icon" id="btn-notes-close" data-testid="button-notes-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="notes-body">
+            <div class="notes-list">
+                <div class="notes-list-header">
+                    <input id="note-search" placeholder="Search notes..." aria-label="Search notes">
+                </div>
+                <ul id="notes-list-items" class="notes-list-items"></ul>
+            </div>
+            <div class="notes-editor-pane">
+                <input id="note-title" class="note-title" placeholder="Untitled note" data-testid="input-note-title">
+                <textarea id="notes-editor" placeholder="Take notes here... Changes are saved automatically." data-testid="input-notes"></textarea>
+                <div class="notes-editor-actions">
+                    <button class="btn-destructive" id="btn-delete-note" data-testid="button-delete-note"><i class="fas fa-trash"></i> Delete</button>
+                    <div style="flex:1"></div>
+                    <button class="btn-secondary" id="btn-notes-open-window" data-testid="button-notes-open-window"><i class="fas fa-external-link-alt"></i> Open in Window</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- AI Prompt Modal (fallback) -->
+    <div id="ai-prompt-modal" class="modal" role="dialog" aria-hidden="true" style="display:none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>ChatGPT Prompt</h2>
+                <button class="btn-close" id="btn-close-ai-prompt">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="padding:1rem;">
+                <p style="color:var(--v-text-secondary); font-size:0.95rem;">Aşağıdaki prompt kopyalanabilir. ChatGPT açıldığında yapıştırıp gönderin.</p>
+                <textarea id="ai-prompt-text" style="width:100%; height:200px; font-family:monospace; margin-top:.5rem;"></textarea>
+                <div style="display:flex; gap:.5rem; margin-top:.75rem;">
+                    <button class="btn-secondary" id="btn-copy-ai-prompt">Kopyala</button>
+                    <button class="btn-primary" id="btn-open-chatgpt-from-prompt">ChatGPT Aç</button>
+                    <div style="flex:1"></div>
+                    <button class="btn-secondary" id="btn-close-ai-prompt-bottom">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
