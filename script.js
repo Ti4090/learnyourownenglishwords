@@ -52,6 +52,42 @@ function debounce(func, wait) {
     };
 }
 
+// Helper to read first existing field value from a list of possible IDs
+function getFirstFieldValue(...ids) {
+    for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el) return (el.value || '').trim();
+    }
+    return '';
+}
+
+// Helper to read first existing property from a word object (aliases)
+function getWordField(word, ...keys) {
+    if (!word) return '';
+    for (const k of keys) {
+        if (word[k]) return word[k];
+    }
+    return '';
+}
+
+function copyPermalink(id) {
+    try {
+        const url = `${location.origin}${location.pathname}#word:${encodeURIComponent(id)}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => showToast('Link panoya kopyalandı.', 'success'));
+        } else {
+            // Fallback: prompt with URL
+            const ta = document.createElement('textarea');
+            ta.value = url; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); ta.remove();
+            showToast('Link panoya kopyalandı (fallback).', 'success');
+        }
+    } catch (err) {
+        console.error('copyPermalink error', err);
+        showToast('Link kopyalanamadı.', 'error');
+    }
+}
+
 function formatDate(isoString) {
     if (!isoString) return 'Never';
     const date = new Date(isoString);
@@ -183,12 +219,27 @@ function addWord(wordData) {
             learned: false
         }
     };
+    // Mirror Turkish explanation across known aliases so renderers/readers find it
+    word.turkExp = word.turkishExplanation;
+    word.turkishExp = word.turkishExplanation;
     
     state.words[id] = word;
     state.appStats.totalAdded = Object.keys(state.words).length;
     updateStats();
     debouncedSaveState();
     return word;
+}
+
+// Find possible duplicate by english (case-insensitive) or turkish
+function findDuplicate(english, turkish) {
+    if (!english) return null;
+    const e = english.trim().toLowerCase();
+    const t = (turkish || '').trim().toLowerCase();
+    return Object.values(state.words).find(w => {
+        if (w.english && w.english.trim().toLowerCase() === e) return true;
+        if (t && w.turkish && w.turkish.trim().toLowerCase() === t) return true;
+        return false;
+    }) || null;
 }
 
 function updateWord(id, wordData) {
@@ -199,6 +250,13 @@ function updateWord(id, wordData) {
         ...wordData,
         stats: state.words[id].stats // Preserve stats
     };
+    // Normalize Turkish explanation aliases if provided
+    const updated = state.words[id];
+    if (wordData.turkishExplanation !== undefined) {
+        updated.turkExp = (wordData.turkishExplanation || '').trim();
+        updated.turkishExp = (wordData.turkishExplanation || '').trim();
+        updated.turkishExplanation = (wordData.turkishExplanation || '').trim();
+    }
     
     updateStats();
     debouncedSaveState();
@@ -372,6 +430,15 @@ function handleRoute() {
         return;
     }
 
+    // Route: word detail (word:<id> or word/<id>)
+    if (route.startsWith('word:') || route.startsWith('word/')) {
+        const parts = route.split(/[:\/]/);
+        const id = parts.slice(1).join(':');
+        const decodedId = decodeURIComponent(id || '');
+        renderWordDetail(mainContent, decodedId);
+        return;
+    }
+
     switch (route) {
         case 'dashboard':
             renderDashboard(mainContent);
@@ -496,7 +563,7 @@ function renderDashboard(container) {
 
 function renderSimpleWordCard(word) {
     return `
-        <div class="simple-word-card" onclick="navigateTo('dictionary')" data-testid="card-word-${word.id}">
+        <div class="simple-word-card" onclick="navigateTo('word:${word.id}')" data-testid="card-word-${word.id}">
             <div class="simple-word-english">${word.english}</div>
             <div class="simple-word-turkish">${word.turkish}</div>
         </div>
@@ -637,8 +704,8 @@ function handleAddWordFormSubmit(event) {
         english: englishInput.value.trim(),
         turkish: turkishInput.value.trim(),
         pronunciation: document.getElementById(prefix + 'pron')?.value?.trim() || '',
-        englishExplanation: document.getElementById(prefix + 'engExp')?.value?.trim() || '',
-        turkishExplanation: document.getElementById(prefix + 'turkExp')?.value?.trim() || '',
+        englishExplanation: getFirstFieldValue(prefix + 'engExp', prefix + 'englishExplanation') || '',
+        turkishExplanation: getFirstFieldValue(prefix + 'turkExp', prefix + 'turkishExp', prefix + 'turkishExplanation') || '',
         level: levelSelect.value,
         synonyms: document.getElementById(prefix + 'syn')?.value?.split(',').map(s => s.trim()).filter(Boolean) || [],
         antonyms: document.getElementById(prefix + 'ant')?.value?.split(',').map(s => s.trim()).filter(Boolean) || [],
@@ -648,6 +715,25 @@ function handleAddWordFormSubmit(event) {
     };
 
     try {
+        // Duplicate detection: if a word with same english/turkish exists, warn user
+        const existing = findDuplicate(formData.english, formData.turkish);
+        if (existing) {
+            const open = confirm(`The word "${formData.english}" seems to already exist as "${existing.english} - ${existing.turkish}".\n\nPress OK to view the existing entry, or Cancel to add this as a separate entry.`);
+            if (open) {
+                // Navigate to dictionary and highlight existing
+                navigateTo('dictionary');
+                setTimeout(() => {
+                    const card = document.querySelector(`[data-testid="card-word-${existing.id}"]`);
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.classList.add('flash-new');
+                        setTimeout(() => card.classList.remove('flash-new'), 1800);
+                    }
+                }, 150);
+                return;
+            }
+        }
+
         // Add the word
         const newWord = addWord(formData);
 
@@ -1072,7 +1158,7 @@ function renderWordCard(word) {
         : 0;
     
     return `
-        <div class="word-card" data-testid="card-word-${word.id}">
+        <div class="word-card" data-testid="card-word-${word.id}" onclick="navigateTo('word:${word.id}')">
             <div class="word-header">
                 <div>
                     <div class="word-english">${word.english}
@@ -1100,13 +1186,13 @@ function renderWordCard(word) {
             </div>
             
             ${word.turkish ? `<div class="word-turkish">${word.turkish}</div>` : ''}
-            
-            ${word.turkishExplanation ? `
-                <div class="word-explanation">
-                    <strong>Türkçe Açıklama:</strong>
-                    <p>${word.turkishExplanation}</p>
-                </div>
-            ` : ''}
+    
+            ${getWordField(word, 'turkishExplanation', 'turkExp', 'turkishExp') ? `
+                        <div class="word-explanation">
+                            <strong>Türkçe Açıklama:</strong>
+                            <p>${getWordField(word, 'turkishExplanation', 'turkExp', 'turkishExp')}</p>
+                        </div>
+                    ` : ''}
             
             ${word.englishExplanation ? `
                 <div class="word-explanation">
@@ -1182,6 +1268,80 @@ function renderFavorites(container) {
             `}
         </div>
     `;
+}
+
+function renderWordDetail(container, id) {
+    const word = state.words[id];
+    if (!word) {
+        container.innerHTML = `
+            <div class="page-header">
+                <h1 class="page-title">Word not found</h1>
+                <p class="page-subtitle">The requested word was not found in your dictionary.</p>
+            </div>
+            <div class="card">
+                <p>Try returning to the <a href="#dictionary" onclick="navigateTo('dictionary'); return false;">dictionary</a>.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const examplesHtml = (word.examples || []).map(ex => {
+        if (typeof ex === 'string') return `<li>${escapeHtml(ex)}</li>`;
+        const en = escapeHtml(ex.english || ex.en || '');
+        const tr = escapeHtml(ex.turkish || ex.tr || '');
+        return `<li><strong>${en}</strong>${tr ? ` — ${tr}` : ''}</li>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="page-header">
+            <a href="#dictionary" id="btn-back-dict" class="btn-secondary" style="margin-bottom: 1rem; display: inline-flex; align-items: center; gap: .5rem;" onclick="navigateTo('dictionary'); return false;">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <h1 class="page-title">${escapeHtml(word.english)}</h1>
+            <p class="page-subtitle">${escapeHtml(word.turkish)}</p>
+        </div>
+
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                <div style="flex:1;">
+                    <div style="display:flex; gap:.5rem; align-items:center;">
+                        <h2 style="margin:0;">${escapeHtml(word.english)}</h2>
+                        <button class="btn-play" onclick="playPronunciation('${escapeHtml(word.english)}', this)"><i class="fas fa-volume-up"></i></button>
+                        <button class="btn-secondary" onclick="copyPermalink('${id}'); event.stopPropagation();">Copy Link</button>
+                    </div>
+
+                    ${word.pronunciation ? `<div style="margin-top:.5rem; color: var(--v-text-secondary);">${escapeHtml(word.pronunciation)}</div>` : ''}
+
+                    ${getWordField(word, 'turkishExplanation', 'turkExp', 'turkishExp') ? `
+                        <div style="margin-top:1rem;"><strong>Türkçe Açıklama</strong><p>${escapeHtml(getWordField(word, 'turkishExplanation', 'turkExp', 'turkishExp'))}</p></div>
+                    ` : ''}
+
+                    ${word.englishExplanation ? `<div style="margin-top:1rem;"><strong>English Explanation</strong><p>${escapeHtml(word.englishExplanation)}</p></div>` : ''}
+
+                    ${examplesHtml ? `<div style="margin-top:1rem;"><strong>Examples</strong><ul>${examplesHtml}</ul></div>` : ''}
+                </div>
+
+                <div style="width:260px;">
+                    <div style="display:flex; gap:.5rem; margin-bottom:1rem;">
+                        <button class="btn-primary" onclick="openEditWordModal('${id}'); event.stopPropagation();">Edit</button>
+                        <button class="btn-destructive" onclick="confirmDeleteWord('${id}'); event.stopPropagation();">Delete</button>
+                    </div>
+
+                    <div style="margin-top:1rem;">
+                        <div><strong>Level</strong>: <span class="badge badge-level ${word.level}">${word.level}</span></div>
+                        <div style="margin-top:.5rem;"><strong>Categories</strong>: ${word.categories.map(c => `<span class="badge badge-category">${escapeHtml(c)}</span>`).join(' ')}</div>
+                        <div style="margin-top:.5rem;"><strong>Synonyms</strong>: ${word.synonyms.join(', ') || '-'}</div>
+                        <div style="margin-top:.5rem;"><strong>Antonyms</strong>: ${word.antonyms.join(', ') || '-'}</div>
+                        <div style="margin-top:.5rem;"><strong>Added</strong>: ${formatDate(word.stats.addedAt)}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // ensure back button works
+    const back = document.getElementById('btn-back-dict');
+    if (back) back.addEventListener('click', (e) => { e.preventDefault(); navigateTo('dictionary'); });
 }
 
 function renderHardWords(container) {
@@ -1787,9 +1947,10 @@ function applyChatGPTJson(rawText, prefix = 'f-') {
     set(prefix + 'level', obj.level || 'C1');
     set(prefix + 'engExp', obj.englishExplanation || obj.englishExplanation || '');
     // Handle both modal and page IDs for Turkish explanation: modal uses 'f-turkishExp', page uses 'page-turkExp'
-    const turkVal = obj.turkishExplanation || obj.turkishExplanation || '';
+    const turkVal = obj.turkishExplanation || obj.turkishExp || obj.turkExp || obj.turkish || '';
     set(prefix + 'turkExp', turkVal);
     set(prefix + 'turkishExp', turkVal);
+    set(prefix + 'turkishExplanation', turkVal);
 
     // Synonyms/antonyms
     if (Array.isArray(obj.synonyms)) set(prefix + 'syn', obj.synonyms.join(', '));
@@ -1973,7 +2134,7 @@ function renderReverseTranslation(word, container) {
     const options = shuffle([word.english, ...distractors]);
     
     container.innerHTML = `
-        <div class="question-text">${word.turkish || word.turkishExplanation}</div>
+        <div class="question-text">${word.turkish || getWordField(word, 'turkishExplanation', 'turkExp', 'turkishExp')}</div>
         <p style="color: var(--v-text-secondary); margin-bottom: 2rem;">Select the English word:</p>
         <div class="quiz-options">
             ${options.map(option => `
@@ -2551,7 +2712,7 @@ function openEditWordModal(id) {
     document.getElementById('f-english').value = word.english;
     document.getElementById('f-turkish').value = word.turkish;
     document.getElementById('f-pron').value = word.pronunciation;
-    document.getElementById('f-turkishExp').value = word.turkishExplanation;
+    document.getElementById('f-turkishExp').value = getWordField(word, 'turkishExplanation', 'turkExp', 'turkishExp');
     document.getElementById('f-engExp').value = word.englishExplanation;
     document.getElementById('f-syn').value = word.synonyms.join(', ');
     document.getElementById('f-ant').value = word.antonyms.join(', ');
