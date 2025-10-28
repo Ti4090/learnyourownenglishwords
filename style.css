@@ -241,6 +241,42 @@ h4 { font-size: 1rem; font-weight: 600; }
     width: 100%;
 }
 
+/* Hide notes textareas by default to avoid stray visible elements when not on add screens */
+#page-notes,
+#f-notes {
+    display: none;
+}
+
+/* Also hide the Notes labels by default (they may be rendered alongside hidden textareas) */
+label[for="page-notes"],
+label[for="f-notes"] {
+    display: none;
+}
+
+/* Show notes textarea when Add Word page is active */
+#mainContent[data-view="add-word"] #page-notes {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+/* Show the page Notes label when Add Word page is active */
+#mainContent[data-view="add-word"] label[for="page-notes"] {
+    display: block;
+    margin-top: 0.75rem;
+}
+
+/* Show modal notes when add/edit modal is open */
+#panel-addWord.active #f-notes {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+/* Show the modal Notes label when the add/edit modal is open */
+#panel-addWord.active label[for="f-notes"] {
+    display: block;
+    margin-top: 0.75rem;
+}
+
 .page-header {
     margin-bottom: 2rem;
 }
@@ -1061,6 +1097,14 @@ tbody tr:last-child td {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+/* Hide the small Notes header unless the drawer is active to avoid stray visible label */
+.notes-drawer .drawer-header h3 {
+    display: none;
+}
+.notes-drawer.active .drawer-header h3 {
+    display: flex;
 }
 
 .drawer-actions {

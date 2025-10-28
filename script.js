@@ -207,6 +207,7 @@ function addWord(wordData) {
         examples: wordData.examples || [],
         level: wordData.level || 'C1',
         categories: wordData.categories || [],
+    notes: wordData.notes?.trim() || '',
         favorite: wordData.favorite || false,
         stats: {
             addedAt: new Date().toISOString(),
@@ -256,6 +257,10 @@ function updateWord(id, wordData) {
         updated.turkExp = (wordData.turkishExplanation || '').trim();
         updated.turkishExp = (wordData.turkishExplanation || '').trim();
         updated.turkishExplanation = (wordData.turkishExplanation || '').trim();
+    }
+
+    if (wordData.notes !== undefined) {
+        updated.notes = (wordData.notes || '').trim();
     }
     
     updateStats();
@@ -711,6 +716,7 @@ function handleAddWordFormSubmit(event) {
         antonyms: document.getElementById(prefix + 'ant')?.value?.split(',').map(s => s.trim()).filter(Boolean) || [],
         examples: document.getElementById(prefix + 'examples')?.value?.split('\n').map(s => s.trim()).filter(Boolean) || [],
         categories: getSelectedCategories(prefix) || [],
+        notes: document.getElementById(prefix + 'notes')?.value?.trim() || '',
         favorite: document.getElementById(prefix + 'fav')?.checked || false
     };
 
@@ -767,6 +773,8 @@ function handleAddWordFormSubmit(event) {
 }
 
 function renderAddWord(container) {
+    // Mark view so CSS can target page-specific elements
+    container.setAttribute('data-view', 'add-word');
     const categories = getAllCategories();
 
     container.innerHTML = `
@@ -833,6 +841,11 @@ function renderAddWord(container) {
                 <div class="form-group">
                     <label for="page-examples">Example Sentences (one per line)</label>
                     <textarea id="page-examples" rows="3" data-testid="input-page-examples" placeholder="This is an example sentence.\nHere's another example."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="page-notes">Notes</label>
+                    <textarea id="page-notes" rows="3" data-testid="input-page-notes" placeholder="Short usage notes, register, collocations..."></textarea>
                 </div>
 
                 <div class="form-row">
@@ -1201,6 +1214,13 @@ function renderWordCard(word) {
                 </div>
             ` : ''}
             
+            ${word.notes ? `
+                <div class="word-notes">
+                    <strong>Notes:</strong>
+                    <p>${escapeHtml(word.notes)}</p>
+                </div>
+            ` : ''}
+
             ${word.examples.length > 0 ? `
                 <div class="word-examples">
                     <strong>Examples:</strong>
@@ -1852,21 +1872,35 @@ function updateSelectedWordsCount() {
 
 // --- ChatGPT prompt helpers ---
 function generateChatGPTPrompt(word) {
-    return `Size bir kelime veriyorum: "${word}".
-Lütfen yalnızca JSON formatında, şu alanları içerecek şekilde cevap veriniz:
+        return `I will give you a single English word: "${word}".
+Please reply ONLY with a single JSON object that strictly follows the schema below. Do not include any extra commentary, explanation, or text — only JSON.
+
+Schema:
 {
-  "english": string, 
-  "turkish": string,
-  "pronunciation": string, // fonetik telaffuz
-  "level": string, // önerilen CEFR seviyesi (A1, A2, B1, B2, C1, C2)
-  "synonyms": [string],
-  "antonyms": [string],
-  "examples": [{"english": string, "turkish": string}],
-  "englishExplanation": string,
-  "turkishExplanation": string
+    "english": string,                    // the headword
+    "turkish": string,                    // short Turkish translation
+    "pronunciation": string|null,         // IPA or readable pron
+    "partOfSpeech": string|null,          // noun / verb / adj / adv / phrase etc.
+    "level": string|null,                 // CEFR level (A1..C2) just say level no extra infomation
+    "frequencyNote": string|null,         // common / uncommon / rare or frequency note
+    "synonyms": [string],
+    "antonyms": [string],
+    "collocations": [string],             // common collocations (e.g. "make a decision")
+    "englishExplanation": string|null,    // clear English definition
+    "turkishExplanation": string|null,    // clear Turkish definition
+    "notes": string|null,                 // short usage notes, pitfalls, register
+    "examples": [                         // provide AT LEAST 4 examples
+        {"english": string, "turkish": string, "context": string|null, "register": string|null}
+    ]
 }
 
-Her alana uygun içerik doldurun. Örnek cümleleri hem İngilizce hem Türkçe verin (en az 2 örnek). JSON dışında başka metin veya açıklama eklemeyin. Kelime: ${word}`;
+Requirements:
+- Provide at least 4 example sentences. Among them include: one formal (e.g., email/report), one informal (casual conversation), one academic/business, and one common everyday usage.
+- For each example include an optional "context" (e.g., "email", "casual chat", "news article") and "register" (e.g., "formal", "informal").
+- Keep array items as arrays and strings as strings. Use null for empty optional fields.
+- DO NOT output anything except the JSON object (no markdown, no explanation).
+
+Word: ${word}`;
 }
 
 function showAIPromptModal(prompt) {
@@ -1907,10 +1941,9 @@ function copyPromptAndOpenChatGPT(prompt) {
     });
 }
 
-// Parse ChatGPT JSON (allow surrounding text) and apply to given form prefix ('f-' or 'page-')
 function applyChatGPTJson(rawText, prefix = 'f-') {
     if (!rawText || !rawText.trim()) {
-        showToast('Lütfen JSON girin veya yapıştırın.', 'warning');
+        showToast('Lütfen ChatGPT tarafından üretilen JSON metnini yapıştırın.', 'warning');
         return;
     }
 
@@ -1955,6 +1988,9 @@ function applyChatGPTJson(rawText, prefix = 'f-') {
     // Synonyms/antonyms
     if (Array.isArray(obj.synonyms)) set(prefix + 'syn', obj.synonyms.join(', '));
     if (Array.isArray(obj.antonyms)) set(prefix + 'ant', obj.antonyms.join(', '));
+
+    // Notes
+    if (obj.notes || obj.note) set(prefix + 'notes', obj.notes || obj.note || '');
 
     // Examples: convert to lines like "English — Turkish"
     if (Array.isArray(obj.examples)) {
@@ -2718,6 +2754,7 @@ function openEditWordModal(id) {
     document.getElementById('f-ant').value = word.antonyms.join(', ');
     document.getElementById('f-examples').value = word.examples.join('\n');
     document.getElementById('f-level').value = word.level;
+    document.getElementById('f-notes').value = word.notes || '';
     
     // Initialize categories
     initializeCategoryDropdown('f');

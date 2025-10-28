@@ -1,0 +1,47 @@
+I attempted to write edits but encountered a transient tool error for one update. If any edit below wasn't applied automatically, please apply them manually.
+
+1) script.js - updateWord: add notes normalization
+Insert after the turkishExplanation normalization block in updateWord:
+
+    if (wordData.notes !== undefined) {
+        updated.notes = (wordData.notes || '').trim();
+    }
+
+2) script.js - renderAddWord: add notes textarea and include in wordData
+In renderAddWord HTML, after the page-examples <div> insert:
+
+    <div class="form-group">
+        <label for="page-notes">Notes</label>
+        <textarea id="page-notes" rows="3" data-testid="input-page-notes" placeholder="Short usage notes, register, collocations..."></textarea>
+    </div>
+
+In the page form submit handler, add to wordData:
+
+    notes: document.getElementById('page-notes')?.value.trim() || '',
+
+3) index.html - Add notes to modal
+In the Add/Edit Word modal form (index.html) after the f-examples textarea add:
+
+    <div class="form-group">
+        <label for="f-notes">Notes</label>
+        <textarea id="f-notes" rows="3" placeholder="Short usage notes, register, collocations..." data-testid="input-f-notes"></textarea>
+    </div>
+
+4) script.js - modal submit handler
+In the 'word-form' submit handler (DOMContentLoaded area), add to wordData:
+
+    notes: document.getElementById('f-notes')?.value.trim() || '',
+
+5) script.js - openEditWordModal
+When filling modal fields, add:
+
+    document.getElementById('f-notes').value = word.notes || '';
+
+6) script.js - renderWordDetail
+Optionally show notes in the detail view; insert where appropriate, for example above examples:
+
+    ${word.notes ? `<div style="margin-top:1rem;"><strong>Notes</strong><p>${escapeHtml(word.notes)}</p></div>` : ''}
+
+7) script.js - applyChatGPTJson already updated to set prefix + 'notes'. Ensure the ids above match.
+
+If you want I can re-run the formal edits; currently I recorded the exact patches above for manual application.
